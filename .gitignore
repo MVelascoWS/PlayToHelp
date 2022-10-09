@@ -9,6 +9,7 @@
 /PlayToHelpGame/[Bb]uilds/
 /PlayToHelpGame/[Ll]ogs/
 /PlayToHelpGame/[Mm]emoryCaptures/
+/PlayToHelpGame/PlayToHelp/
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
