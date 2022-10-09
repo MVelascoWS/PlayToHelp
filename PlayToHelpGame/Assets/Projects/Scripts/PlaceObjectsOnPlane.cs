@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using UnityEngine.Events;
 using TMPro;
 
 [RequireComponent(typeof(ARRaycastManager))]
@@ -12,6 +13,7 @@ public class PlaceObjectsOnPlane : MonoBehaviour
     [Tooltip("Instantiates this prefab on a plane at the touch location.")]
     GameObject m_PlacedPrefab;
     public TextMeshProUGUI textDebug;
+    public UnityEvent OnPrefabPlace;
     private RaycastHit hit;
     /// <summary>
     /// The prefab to instantiate on touch.
@@ -65,9 +67,9 @@ public class PlaceObjectsOnPlane : MonoBehaviour
             {
                 if (Physics.Raycast(Camera.main.ScreenPointToRay(touch.position), out hit))
                 {
-                    if (hit.collider.transform.CompareTag("Spin"))
+                    if (hit.collider.transform.CompareTag("Road"))
                     {
-                        hit.collider.SendMessage("StartRandomSpin");
+                        
                         
                         return;
                     }
@@ -81,7 +83,7 @@ public class PlaceObjectsOnPlane : MonoBehaviour
                     if (m_NumberOfPlacedObjects < m_MaxNumberOfObjectsToPlace)
                     {
                         spawnedObject = Instantiate(m_PlacedPrefab, hitPose.position, hitPose.rotation);
-                        
+                        OnPrefabPlace.Invoke();
                         m_NumberOfPlacedObjects++;
                     }
                     else

@@ -27,7 +27,7 @@ namespace Web3Unity.Scripts.Prefabs.Minter
         public InputField itemPrice;
         public Text noListedItems;
         public Text playerAccount;
-   
+        private int index = 0;
         public void Awake()
         {
             account = PlayerPrefs.GetString("Account");
@@ -38,28 +38,34 @@ namespace Web3Unity.Scripts.Prefabs.Minter
         }
 
         // Start is called before the first frame update
-        async void Start()
+        void Start()
         {
             playerAccount.text = account;
+            CollecMinted();
+        }
+
+        async void CollecMinted()
+        {
             try
             {
-                List<MintedNFT.Response> response = await EVM.GetMintedNFT(chain, network,account);
-            
-                if (response[1].uri == null)
+                List<MintedNFT.Response> response = await EVM.GetMintedNFT(chain, network, account);
+                Debug.Log("ITEMS  minted: " + response.Count);
+
+                if (response[index].uri == null)
                 {
                     Debug.Log("Not Listed Items");
                     return;
                 }
-                if (response[1].uri.StartsWith("ipfs://"))
+                if (response[index].uri.StartsWith("ipfs://"))
                 {
-                    response[1].uri = response[1].uri.Replace("ipfs://", "https://ipfs.io/ipfs/");
+                    response[index].uri = response[index].uri.Replace("ipfs://", "https://ipfs.io/ipfs/");
                 }
-            
-                UnityWebRequest webRequest = UnityWebRequest.Get(response[1].uri);
+
+                UnityWebRequest webRequest = UnityWebRequest.Get(response[index].uri);
                 await webRequest.SendWebRequest();
                 RootGetNFT data =
                     JsonConvert.DeserializeObject<RootGetNFT>(
-                        System.Text.Encoding.UTF8.GetString(webRequest.downloadHandler.data)); 
+                        System.Text.Encoding.UTF8.GetString(webRequest.downloadHandler.data));
                 description.text = data.description;
                 // parse json to get image uri
                 string imageUri = data.image;
@@ -73,15 +79,15 @@ namespace Web3Unity.Scripts.Prefabs.Minter
                     StartCoroutine(DownloadImage(imageUri));
                 }
 
-                tokenURI.text = response[1].uri;
-                Debug.Log(response[1].uri);
-                contractAddr.text = response[1].nftContract;
-                Debug.Log("NFT Contract: " + response[1].nftContract);
-                isApproved.text = response[1].isApproved.ToString();
-                _itemID = response[1].id;
+                tokenURI.text = response[index].uri;
+                Debug.Log(response[index].uri);
+                contractAddr.text = response[index].nftContract;
+                Debug.Log("NFT Contract: " + response[index].nftContract);
+                isApproved.text = response[index].isApproved.ToString();
+                _itemID = response[index].id;
                 _itemPrice = itemPrice.text;
-                Debug.Log("Token Type: " + response[1].tokenType);
-                _tokenType = response[1].tokenType;
+                Debug.Log("Token Type: " + response[index].tokenType);
+                _tokenType = response[index].tokenType;
             }
             catch (Exception e)
             {
@@ -89,7 +95,6 @@ namespace Web3Unity.Scripts.Prefabs.Minter
                 Debug.Log("No Listed Items" + e);
             }
         }
-
         // ReSharper disable Unity.PerformanceAnalysis
         IEnumerator DownloadImage(string MediaUrl)
         {
@@ -120,6 +125,7 @@ namespace Web3Unity.Scripts.Prefabs.Minter
             Debug.Log("ItemID: " + _itemID);
             ListNFT.Response response =
                 await EVM.CreateListNftTransaction(chain, network, account, _itemID, Convert.ToDecimal(wei).ToString(), _tokenType);
+            Debug.Log("Response: " + response);
             int value = Convert.ToInt32(response.tx.value.hex, 16);
             Debug.Log("Response: " + response);
             try
