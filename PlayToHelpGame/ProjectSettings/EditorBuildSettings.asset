@@ -8,4 +8,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Projects/Scenes/WalletLogin.unity
     guid: cc28e1075e9584f1698219d041278648
-  m_configObjects: {}
+  - enabled: 1
+    path: Assets/Projects/Scenes/MarketPlace.unity
+    guid: 2ae5202966c28d5499d08158f4e30cba
+  m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 220fd4750ea3b574c9cc54ffc749cf83, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 02096474ee49225408290688c9f49884, type: 2}

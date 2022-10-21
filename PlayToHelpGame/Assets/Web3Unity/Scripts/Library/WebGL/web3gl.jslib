@@ -3,6 +3,12 @@ mergeInto(LibraryManager.library, {
     window.web3gl.connect();
   },
 
+Web3ConnectMobile: function()
+{
+	web3 = new Web3(window.ethereum);
+	ethereum.enable();
+},
+
   ConnectAccount: function () {
     var bufferSize = lengthBytesUTF8(window.web3gl.connectAccount) + 1;
     var buffer = _malloc(bufferSize);

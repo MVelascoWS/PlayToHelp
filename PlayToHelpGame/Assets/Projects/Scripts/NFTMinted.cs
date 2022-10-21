@@ -21,6 +21,7 @@ public class NFTMinted : MonoBehaviour
     public void ShowItems()
     {
         account = PlayerPrefs.GetString("Account");
+        ClearChilds();
         CollecMinted();
     }
     async void CollecMinted()
@@ -96,5 +97,11 @@ public class NFTMinted : MonoBehaviour
             100.0f);
     }
 
-
+    void ClearChilds() 
+    {
+        foreach (Transform child in parent)
+        {
+            GameObject.Destroy(child.gameObject);
+        }
+    }
 }

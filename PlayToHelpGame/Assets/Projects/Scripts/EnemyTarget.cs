@@ -18,4 +18,14 @@ public class EnemyTarget : MonoBehaviour
     {
         transform.localPosition = Vector3.Lerp(transform.localPosition, target, Time.deltaTime * speed);
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log("Collision with " + collision.transform.tag);
+        if (collision.transform.CompareTag("Bullet"))
+        {
+            Destroy(this.gameObject);
+            Destroy(collision.gameObject);
+        }
+    }
 }

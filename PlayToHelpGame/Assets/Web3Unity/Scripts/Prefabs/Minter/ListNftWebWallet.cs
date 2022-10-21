@@ -6,6 +6,8 @@ using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+using TMPro;
+using UnityEngine.Events;
 
 namespace Web3Unity.Scripts.Prefabs.Minter
 {
@@ -19,27 +21,24 @@ namespace Web3Unity.Scripts.Prefabs.Minter
         private string _itemID = "";
         private string account;
         
-        public Renderer textureObject;
-        public Text description;
-        public Text tokenURI;
-        public Text contractAddr;
-        public Text isApproved;
-        public InputField itemPrice;
-        public Text noListedItems;
-        public Text playerAccount;
+        public Image textureObject;
+        public TextMeshProUGUI description;
+        public TextMeshProUGUI tokenURI;
+        public TextMeshProUGUI contractAddr;
+        public TextMeshProUGUI isApproved;
+        public TMP_InputField itemPrice;
+        public TextMeshProUGUI noListedItems;
+        public TextMeshProUGUI playerAccount;
+        public UnityEvent OnListed;
         private int index = 0;
-        public void Awake()
+        private List<MintedNFT.Response> response;
+        public void Init()
         {
             account = PlayerPrefs.GetString("Account");
             description.text = "";
             tokenURI.text = "";
             isApproved.text = "";
             contractAddr.text = "";
-        }
-
-        // Start is called before the first frame update
-        void Start()
-        {
             playerAccount.text = account;
             CollecMinted();
         }
@@ -48,7 +47,8 @@ namespace Web3Unity.Scripts.Prefabs.Minter
         {
             try
             {
-                List<MintedNFT.Response> response = await EVM.GetMintedNFT(chain, network, account);
+                response = new List<MintedNFT.Response>();
+                response = await EVM.GetMintedNFT(chain, network, account);
                 Debug.Log("ITEMS  minted: " + response.Count);
 
                 if (response[index].uri == null)
@@ -56,43 +56,63 @@ namespace Web3Unity.Scripts.Prefabs.Minter
                     Debug.Log("Not Listed Items");
                     return;
                 }
-                if (response[index].uri.StartsWith("ipfs://"))
-                {
-                    response[index].uri = response[index].uri.Replace("ipfs://", "https://ipfs.io/ipfs/");
-                }
-
-                UnityWebRequest webRequest = UnityWebRequest.Get(response[index].uri);
-                await webRequest.SendWebRequest();
-                RootGetNFT data =
-                    JsonConvert.DeserializeObject<RootGetNFT>(
-                        System.Text.Encoding.UTF8.GetString(webRequest.downloadHandler.data));
-                description.text = data.description;
-                // parse json to get image uri
-                string imageUri = data.image;
-                if (imageUri.StartsWith("ipfs://"))
-                {
-                    imageUri = imageUri.Replace("ipfs://", "https://ipfs.io/ipfs/");
-                    StartCoroutine(DownloadImage(imageUri));
-                }
-                else
-                {
-                    StartCoroutine(DownloadImage(imageUri));
-                }
-
-                tokenURI.text = response[index].uri;
-                Debug.Log(response[index].uri);
-                contractAddr.text = response[index].nftContract;
-                Debug.Log("NFT Contract: " + response[index].nftContract);
-                isApproved.text = response[index].isApproved.ToString();
-                _itemID = response[index].id;
-                _itemPrice = itemPrice.text;
-                Debug.Log("Token Type: " + response[index].tokenType);
-                _tokenType = response[index].tokenType;
+                GetNFTData();
             }
             catch (Exception e)
             {
                 noListedItems.text = "NO LISTED ITEM for " + account;
                 Debug.Log("No Listed Items" + e);
+            }
+        }
+        async void GetNFTData()
+        {
+            if (response[index].uri.StartsWith("ipfs://"))
+            {
+                response[index].uri = response[index].uri.Replace("ipfs://", "https://ipfs.chainsafe.io/ipfs/");
+            }
+
+            UnityWebRequest webRequest = UnityWebRequest.Get(response[index].uri);
+            await webRequest.SendWebRequest();
+            RootGetNFT data =
+                JsonConvert.DeserializeObject<RootGetNFT>(
+                    System.Text.Encoding.UTF8.GetString(webRequest.downloadHandler.data));
+            description.text = data.description;
+            // parse json to get image uri
+            string imageUri = data.image;
+            if (imageUri.StartsWith("ipfs://"))
+            {
+                imageUri = imageUri.Replace("ipfs://", "https://ipfs.chainsafe.io/ipfs/");
+                StartCoroutine(DownloadImage(imageUri));
+            }
+            else
+            {
+                StartCoroutine(DownloadImage(imageUri));
+            }
+
+            tokenURI.text = response[index].uri;
+            Debug.Log(response[index].uri);
+            contractAddr.text = response[index].nftContract;
+            Debug.Log("NFT Contract: " + response[index].nftContract);
+            isApproved.text = response[index].isApproved.ToString();
+            _itemID = response[index].id;
+            _itemPrice = itemPrice.text;
+            Debug.Log("Token Type: " + response[index].tokenType);
+            _tokenType = response[index].tokenType;
+        }
+        public void PrevNFT()
+        {
+            if (index > 0)
+            {
+                index--;
+                GetNFTData();
+            }
+        }
+        public void NextNFT()
+        {
+            if (index < response.Count - 1)
+            {
+                index++;
+                GetNFTData();
             }
         }
         // ReSharper disable Unity.PerformanceAnalysis
@@ -106,7 +126,7 @@ namespace Web3Unity.Scripts.Prefabs.Minter
             {
                 Texture2D webTexture = ((DownloadHandlerTexture) request.downloadHandler).texture as Texture2D;
                 Sprite webSprite = SpriteFromTexture2D(webTexture);
-                textureObject.GetComponent<Image>().sprite = webSprite;
+                textureObject.sprite = webSprite;
             }
         }
 
@@ -132,6 +152,7 @@ namespace Web3Unity.Scripts.Prefabs.Minter
             {
                 string responseNft = await Web3Wallet.SendTransaction(chainID, response.tx.to, value.ToString(),
                     response.tx.data, response.tx.gasLimit, response.tx.gasPrice);
+                OnListed.Invoke();
                 if (responseNft == null)
                 {
                     Debug.Log("Empty Response Object:");

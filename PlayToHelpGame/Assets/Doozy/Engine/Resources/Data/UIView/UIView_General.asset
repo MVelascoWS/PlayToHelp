@@ -22,3 +22,8 @@ MonoBehaviour:
   - Marketplace
   - Playing
   - End
+  - Minted
+  - Listed
+  - ToBuy
+  - ListLoading
+  - BuyLoading

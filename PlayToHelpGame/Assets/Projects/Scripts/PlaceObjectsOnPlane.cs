@@ -88,6 +88,7 @@ public class PlaceObjectsOnPlane : MonoBehaviour
                     }
                     else
                     {
+                        return;
                         if (m_CanReposition)
                         {
                             spawnedObject.transform.SetPositionAndRotation(hitPose.position, hitPose.rotation);

@@ -8,26 +8,29 @@ using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+using TMPro;
+using UnityEngine.Events;
 
 public class GetListedNFTWebWallet : MonoBehaviour
 {
     private string chain = "ethereum";
-    public Renderer textureObject;
+    public Image nftImage;
     private string network = "goerli";
     private string chainID = "5";
-    public Text price;
-    public Text seller;
-    public Text description;
-    public Text listPercentage;
-    public Text contractAddr;
-    public Text tokenId;
-    public Text itemId;
+    public TextMeshProUGUI price;
+    public TextMeshProUGUI seller;
+    public TextMeshProUGUI description;
+    public TextMeshProUGUI listPercentage;
+    public TextMeshProUGUI contractAddr;
+    public TextMeshProUGUI tokenId;
+    public TextMeshProUGUI itemId;
+    public UnityEvent OnPurchased;
     private string _itemPrice = "";
     private string _tokenType = "";
 
     private string _itemID = "";
-
-
+    private int index;
+    private List<GetNftListModel.Response> response;
     public void Awake()
     {
         
@@ -40,20 +43,29 @@ public class GetListedNFTWebWallet : MonoBehaviour
         contractAddr.text = "";
     }
 
+
     // Start is called before the first frame update
-    async void Start()
+    async public void PullData()
     {
-        List<GetNftListModel.Response> response = await EVM.GetNftMarket(chain, network);
-        price.text = response[0].price;
-        seller.text = response[0].seller;
-        Debug.Log("Seller: " + response[0].seller);
-        if (response[0].uri.StartsWith("ipfs://"))
+        response = new List<GetNftListModel.Response>();
+        response = await EVM.GetNftMarket(chain, network);
+        index = 0;
+        if(response.Count > 0)
+        GetNFTData();
+    }  
+
+    async void GetNFTData()
+    {
+        price.text = response[index].price;
+        seller.text = response[index].seller;
+        Debug.Log("Seller: " + response[index].seller);
+        if (response[index].uri.StartsWith("ipfs://"))
         {
-            response[0].uri = response[0].uri.Replace("ipfs://", "https://ipfs.io/ipfs/");
-            Debug.Log("Response URI" + response[0].uri);
+            response[index].uri = response[index].uri.Replace("ipfs://", "https://ipfs.chainsafe.io/ipfs/");
+            Debug.Log("Response URI" + response[index].uri);
         }
 
-        UnityWebRequest webRequest = UnityWebRequest.Get(response[0].uri);
+        UnityWebRequest webRequest = UnityWebRequest.Get(response[index].uri);
         await webRequest.SendWebRequest();
         RootGetNFT data =
             JsonConvert.DeserializeObject<RootGetNFT>(
@@ -66,12 +78,12 @@ public class GetListedNFTWebWallet : MonoBehaviour
         {
             description.text = data.description;
         }
-        
+
         // parse json to get image uri
         string imageUri = data.image;
         if (imageUri.StartsWith("ipfs://"))
         {
-            imageUri = imageUri.Replace("ipfs://", "https://ipfs.io/ipfs/");
+            imageUri = imageUri.Replace("ipfs://", "https://ipfs.chainsafe.io/ipfs/");
             StartCoroutine(DownloadImage(imageUri));
         }
         else
@@ -85,20 +97,36 @@ public class GetListedNFTWebWallet : MonoBehaviour
             {
                 if (prop.StartsWith("ipfs://"))
                 {
-                    var additionalURi = prop.Replace("ipfs://", "https://ipfs.io/ipfs/");
+                    var additionalURi = prop.Replace("ipfs://", "https://ipfs.chainsafe.io/ipfs/");
                 }
             }
         }
-        listPercentage.text = response[0].listedPercentage;
-        Debug.Log(response[0].listedPercentage);
-        contractAddr.text = response[0].nftContract;
-        itemId.text = response[0].itemId;
-        _itemID = response[0].itemId;
-        _itemPrice = response[0].price;
-        _tokenType = response[0].tokenType;
-        tokenId.text = response[0].tokenId;
+        listPercentage.text = response[index].listedPercentage;
+        Debug.Log(response[index].listedPercentage);
+        contractAddr.text = response[index].nftContract;
+        itemId.text = response[index].itemId;
+        _itemID = response[index].itemId;
+        _itemPrice = response[index].price;
+        _tokenType = response[index].tokenType;
+        tokenId.text = response[index].tokenId;
     }
 
+    public void PrevNFT()
+    {
+        if (index > 0)
+        {
+            index--;
+            GetNFTData();
+        }
+    }
+    public void NextNFT()
+    {
+        if (index < response.Count-1)
+        {
+            index++;
+            GetNFTData();
+        }
+    }
     // ReSharper disable Unity.PerformanceAnalysis
     IEnumerator DownloadImage(string MediaUrl)
     {
@@ -110,7 +138,7 @@ public class GetListedNFTWebWallet : MonoBehaviour
         {
             Texture2D webTexture = ((DownloadHandlerTexture) request.downloadHandler).texture as Texture2D;
             Sprite webSprite = SpriteFromTexture2D(webTexture);
-            textureObject.GetComponent<Image>().sprite = webSprite;
+            nftImage.sprite = webSprite;
         }
     }
 
@@ -122,6 +150,9 @@ public class GetListedNFTWebWallet : MonoBehaviour
 
     public async void PurchaseItem()
     {
+        Debug.Log(_itemID);
+        Debug.Log(_itemPrice);
+        Debug.Log(_tokenType);
         BuyNFT.Response response = await EVM.CreatePurchaseNftTransaction(chain, network,
             PlayerPrefs.GetString("Account"), _itemID, _itemPrice, _tokenType);
         Debug.Log("Account: " + response.tx.account);
@@ -136,11 +167,11 @@ public class GetListedNFTWebWallet : MonoBehaviour
             
             string responseNft = await Web3Wallet.SendTransaction(chainID, response.tx.to, response.tx.value,
                 response.tx.data, response.tx.gasLimit, response.tx.gasPrice);
+            OnPurchased.Invoke();
             if (responseNft == null)
             {
                 Debug.Log("Empty Response Object:");
             }
-            print(responseNft);
             Debug.Log(responseNft);
         }
         catch (Exception e)
