@@ -8,4 +8,8 @@ public class PlayGame : MonoBehaviour
     {
         GameManager.Instance.StartGame();
     }
+    public void PlayStop()
+    {
+        GameManager.Instance.StopGame();
+    }
 }

@@ -12,4 +12,12 @@ public class Bullet : MonoBehaviour
             Destroy(collision.gameObject);
         }
     }
+    private void OnTriggerEnter(Collider collider)
+    {
+        Debug.Log("Collision with " + collider.transform.tag);
+        if (collider.transform.CompareTag("Pool"))
+        {
+            Destroy(collider.gameObject);
+        }
+    }
 }
