@@ -3,6 +3,7 @@
 # PlayToHelp
 The education on many countrys of LATAM and the world are conditioned to social factors but first of all the economy of the country, this makes inequality to have better studys, better salary and better life. 
 
+[![Watch the video](https://img.youtube.com/vi/AlKIrkG-eDs/maxresdefault.jpg)](https://youtu.be/AlKIrkG-eDs)
 # Technology
 
 Chainsafe’s open source tools will make it possible to connect blockhain to game.
